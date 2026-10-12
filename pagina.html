@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LINC - Registro de Progresos</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f4f8;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 650px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        header {
+            text-align: center;
+            border-bottom: 2px solid #e1e8ed;
+            padding-bottom: 20px;
+            margin-bottom: 25px;
+        }
+        h1 {
+            color: #0056b3;
+            font-size: 2.5rem;
+            margin: 0 0 10px 0;
+            letter-spacing: 1px;
+        }
+        .descripcion {
+            font-size: 1rem;
+            color: #666;
+            line-height: 1.5;
+        }
+        .form-group {
+            margin-bottom: 18px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 6px;
+            color: #444;
+        }
+        input[type="text"], input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+        input[type="file"] {
+            background: #f8f9fa;
+            cursor: pointer;
+        }
+        .btn-submit {
+            background-color: #0056b3;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            width: 100%;
+            transition: background 0.3s;
+            margin-bottom: 10px;
+        }
+        .btn-submit:hover {
+            background-color: #004085;
+        }
+        .btn-historial {
+            background-color: #17a2b8;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            width: 100%;
+            transition: background 0.3s;
+        }
+        .btn-historial:hover {
+            background-color: #117a8b;
+        }
+        .privacidad-note {
+            margin-top: 15px;
+            font-size: 0.85rem;
+            color: #28a745;
+            text-align: center;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>LINC</h1>
+        <p class="descripcion">Esta página web fue creada con el fin de que los/las estudiantes puedan registrar sus proyectos o trabajos de forma privada.</p>
+    </header>
+
+    <!-- Formulario de Registro -->
+    <form id="formularioProgreso">
+        <div class="form-group">
+            <label for="nombre">Nombre Completo del Estudiante:</label>
+            <input type="text" id="nombre" placeholder="Ej. Juan Pérez" required>
+        </div>
+
+        <div class="form-group">
+            <label for="tituloProyecto">Título del Proyecto o Trabajo:</label>
+            <input type="text" id="tituloProyecto" placeholder="Ej. Maqueta de Ciencias" required>
+        </div>
+
+        <div class="form-group">
+            <label for="imagen">Subir Imagen del Progreso:</label>
+            <input type="file" id="imagen" accept="image/*" required>
+        </div>
+
+        <div class="form-group">
+            <label for="documento">Subir Documento o Archivo (PDF, Word, etc.):</label>
+            <input type="file" id="documento" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" required>
+        </div>
+
+        <button type="submit" class="btn-submit">Guardar y Ver en Nueva Pestaña</button>
+        <button type="button" class="btn-historial" onclick="abrirHistorialCompleto()">📁 Ver Todos Mis Registros Privados</button>
+        
+        <p class="privacidad-note">🔒 Tus datos se guardan solo en tu navegador. Nadie más puede verlos.</p>
+    </form>
+</div>
+
+<script>
+    // Función para convertir archivos a Base64
+    function archivoABase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
+        });
+    }
+
+    document.getElementById('formularioProgreso').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const nombre = document.getElementById('nombre').value;
+        const proyecto = document.getElementById('tituloProyecto').value;
+        const imagenInput = document.getElementById('imagen').files[0];
+        const documentoInput = document.getElementById('documento').files[0];
+
+        try {
+            // Convertir archivos para almacenamiento local
+            const imagenBase64 = await archivoABase64(imagenInput);
+            const documentoBase64 = await archivoABase64(documentoInput);
+
+            // Crear objeto del registro
+            const nuevoRegistro = {
+                id: Date.now(),
+                estudiante: nombre,
+                proyecto: proyecto,
+                imagen: imagenBase64,
+                documento: documentoBase64,
+                nombreDocumento: documentoInput.name,
+                fecha: new Date().toLocaleString('es-ES')
+            };
+
+            // Guardar en LocalStorage privado
+            let registrosExistentes = JSON.parse(localStorage.getItem('mis_progresos_linc')) || [];
+            registrosExistentes.push(nuevoRegistro);
+            localStorage.setItem('mis_progresos_linc', JSON.stringify(registrosExistentes));
+
+            // Resetear formulario
+            document.getElementById('formularioProgreso').reset();
+
+            // Abrir en una nueva pestaña el registro actual
+            abrirFichaUnica(nuevoRegistro);
+
+        } catch (error) {
+            alert('Error al procesar los archivos. Inténtalo de nuevo.');
+            console.error(error);
+        }
+    });
+
+    // Pestaña 1: Abre la Ficha con la información recién registrada
+    function abrirFichaUnica(registro) {
+        const nuevaVentana = window.open('', '_blank');
+        const html = `
+            <!DOCTYPE html>
+            <html lang="es">
+            <head>
+                <meta charset="UTF-8">
+                <title>LINC - Confirmación de Registro</title>
+                <style>
+                    body { font-family: 'Segoe UI', sans-serif; background-color: #f0f4f8; padding: 40px 20px; }
+                    .card { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+                    h2 { color: #28a745; margin-top: 0; text-align: center; }
+                    .campo { margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+                    .label { font-weight: bold; color: #555; }
+                    .val { font-size: 1.1rem; color: #111; margin-top: 5px; }
+                    img { max-width: 100%; border-radius: 8px; margin-top: 10px; }
+                    .btn-down { display: inline-block; margin-top: 10px; background: #0056b3; color: white; padding: 10px 15px; border-radius: 6px; text-decoration: none; font-weight: bold; }
+                </style>
+            </head>
+            <body>
+                <div class="card">
+                    <h2>✅ Registro Guardado con Éxito</h2>
+                    <div class="campo">
+                        <div class="label">Fecha de Registro:</div>
+                        <div class="val">${registro.fecha}</div>
+                    </div>
+                    <div class="campo">
+                        <div class="label">Estudiante:</div>
+                        <div class="val">${registro.estudiante}</div>
+                    </div>
+                    <div class="campo">
+                        <div class="label">Proyecto:</div>
+                        <div class="val">${registro.proyecto}</div>
+                    </div>
+                    <div class="campo">
+                        <div class="label">Imagen Registrada:</div>
+                        <div><img src="${registro.imagen}" alt="Proyecto"></div>
+                    </div>
+                    <div class="campo">
+                        <div class="label">Documento Adjunto:</div>
+                        <div><a href="${registro.documento}" download="${registro.nombreDocumento}" class="btn-down">📄 Descargar ${registro.nombreDocumento}</a></div>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `;
+        nuevaVentana.document.write(html);
+        nuevaVentana.document.close();
+    }
+
+    // Pestaña 2: Abre la lista con TODO lo registrado por el usuario
+    function abrirHistorialCompleto() {
+        const nuevaVentana = window.open('', '_blank');
+        const html = `
+            <!DOCTYPE html>
+            <html lang="es">
+            <head>
+                <meta charset="UTF-8">
+                <title>LINC - Historial Completo de Registros</title>
+                <style>
+                    body { font-family: 'Segoe UI', sans-serif; background-color: #f0f4f8; padding: 30px 15px; margin: 0; }
+                    .container { max-width: 900px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+                    h1 { color: #0056b3; border-bottom: 2px solid #e1e8ed; padding-bottom: 10px; margin-top: 0; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                    th, td { border: 1px solid #dee2e6; padding: 12px; text-align: left; vertical-align: top; }
+                    th { background-color: #0056b3; color: white; }
+                    .preview-img { max-width: 90px; max-height: 90px; border-radius: 6px; }
+                    .btn-link { color: #0056b3; font-weight: bold; text-decoration: none; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h1>📁 Mis Proyectos Registrados (Historial Completo)</h1>
+                    <p>Estos son todos los datos e información guardada de forma privada en este equipo:</p>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Estudiante</th>
+                                <th>Proyecto</th>
+                                <th>Imagen</th>
+                                <th>Archivo</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaCuerpo"></tbody>
+                    </table>
+                </div>
+                <script>
+                    const datos = JSON.parse(localStorage.getItem('mis_progresos_linc')) || [];
+                    const tbody = document.getElementById('tablaCuerpo');
+                    if (datos.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 20px;">No has registrado ningún proyecto todavía.</td></tr>';
+                    } else {
+                        datos.slice().reverse().forEach(item => {
+                            tbody.innerHTML += \`
+                                <tr>
+                                    <td>\${item.fecha}</td>
+                                    <td><strong>\${item.estudiante}</strong></td>
+                                    <td>\${item.proyecto}</td>
+                                    <td><img src="\${item.imagen}" class="preview-img" alt="Vista previa"></td>
+                                    <td><a href="\${item.documento}" download="\${item.nombreDocumento}" class="btn-link">📄 Descargar \${item.nombreDocumento}</a></td>
+                                </tr>
+                            \`;
+                        });
+                    }
+                <\/script>
+            </body>
+            </html>
+        `;
+        nuevaVentana.document.write(html);
+        nuevaVentana.document.close();
+    }
+</script>
+
+</body>
+</html>
